@@ -4,15 +4,14 @@ import Brevo from "@getbrevo/brevo";
 
 const app = express();
 
-/**
- * Routes de diagnostic
- */
-app.get("/", (req, res) => res.status(200).send("up"));
-app.get("/healthz", (req, res) => res.status(200).send("ok"));
+/** Routes de diagnostic */
+app.get("/", (_req, res) => res.status(200).send("up"));
+app.get("/healthz", (_req, res) => res.status(200).send("ok"));
 
 /**
  * Webhook Stripe
- * IMPORTANT: Utiliser le RAW body pour vérifier la signature Stripe.
+ * IMPORTANT : utiliser le RAW body pour vérifier la signature Stripe.
+ * On applique express.raw UNIQUEMENT sur /webhook.
  */
 app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -25,7 +24,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
 
   let event;
   try {
-    // Vérifie que l'événement vient bien de Stripe
+    // Vérifie la signature Stripe
     event = Stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
   } catch (err) {
     console.error("Signature verification failed:", err.message);
@@ -70,15 +69,10 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
   }
 });
 
-/**
- * Pour toute autre route éventuelle, JSON classique.
- * (doit venir APRÈS la route /webhook qui utilise express.raw)
- */
+/** Pour toutes les autres routes éventuelles, parser le JSON (après /webhook) */
 app.use(express.json());
 
-/**
- * Helpers
- */
+/** Helpers */
 function formatAmount(amountInMinor, currency) {
   const digits = ["jpy", "krw"].includes((currency || "").toLowerCase()) ? 0 : 2;
   return `${(amountInMinor / 10 ** digits).toFixed(digits)} ${String(currency || "").toUpperCase()}`;
@@ -107,9 +101,7 @@ async function sendEmail({ subject, text }) {
   await api.sendTransacEmail(email);
 }
 
-/**
- * Démarrage serveur — Cloud Run exige 0.0.0.0 et le port $PORT
- */
+/** Démarrage serveur — Cloud Run exige 0.0.0.0 et le port $PORT */
 const port = process.env.PORT || 8080;
 app.listen(port, "0.0.0.0", () => {
   console.log(`Listening on 0.0.0.0:${port}`);
