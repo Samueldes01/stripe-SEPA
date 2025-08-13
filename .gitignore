@@ -1,4 +1,7 @@
-node_modules
-npm-debug.log*
+.bundle/
+vendor/
+log/
+tmp/
+*.log
 .DS_Store
 .env
