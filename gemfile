@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+
+ruby '3.2.2' # ou supprime cette ligne si tu veux laisser libre
+
+gem 'sinatra', '~> 3.0'
+gem 'stripe',  '>= 11', '< 13'
+gem 'sendgrid-ruby', '~> 7.0'
