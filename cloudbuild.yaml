@@ -1,0 +1,32 @@
+substitutions:
+  _REGION: "europe-west1"
+  _SERVICE: "stripe-webhook"
+  _REPO: "cloud-run"   # nom du repo Artifact Registry (docker) dans la même région
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Build image"
+    args: ["build", "-t", "europe-west1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA", "."]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Push image"
+    args: ["push", "europe-west1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA"]
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+    id: "Deploy to Cloud Run"
+    entrypoint: gcloud
+    args:
+      [
+        "run","deploy","${_SERVICE}",
+        "--image","europe-west1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA",
+        "--region","${_REGION}",
+        "--allow-unauthenticated",
+        "--set-secrets","STRIPE_WEBHOOK_SECRET=projects/$PROJECT_ID/secrets/STRIPE_WEBHOOK_SECRET:latest",
+        "--set-secrets","BREVO_API_KEY=projects/$PROJECT_ID/secrets/BREVO_API_KEY:latest",
+        "--set-secrets","MAIL_TO=projects/$PROJECT_ID/secrets/MAIL_TO:latest",
+        "--set-secrets","MAIL_FROM=projects/$PROJECT_ID/secrets/MAIL_FROM:latest"
+      ]
+images:
+  - "europe-west1-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA"
