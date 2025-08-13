@@ -1,20 +1,15 @@
-# Stripe Webhook (Ruby/Sinatra) + Email via SendGrid sur Google Cloud Run
+# Stripe Webhook → Email (Cloud Run + Brevo)
 
-## Variables d'environnement à fournir
-- STRIPE_API_KEY        = sk_test_... / sk_live_...
-- STRIPE_WEBHOOK_SECRET = whsec_... (copié du Dashboard Stripe après ajout d'endpoint)
-- SENDGRID_API_KEY      = votre clé SendGrid
-- NOTIFY_EMAIL          = desplat.samuel@outlook.be   # (modifiable)
-- FROM_EMAIL            = adresse vérifiée dans SendGrid (ex: noreply@votredomaine.com)
+## Secrets (Secret Manager)
+Créez 4 secrets :
+- STRIPE_WEBHOOK_SECRET = `whsec_...` (Stripe)
+- BREVO_API_KEY = clé API Brevo (Transactional)
+- MAIL_TO = destinataire, ex. `vous@domaine.com`
+- MAIL_FROM = expéditeur validé sur Brevo, ex. `webhooks@domaine.com`
 
-## Déploiement
+## Artifact Registry
 ```bash
-PROJECT_ID=$(gcloud config get-value project)
-REGION=europe-west1
-
-gcloud builds submit --tag gcr.io/$PROJECT_ID/stripe-webhook-email-ruby
-
-gcloud run deploy stripe-webhook-email-ruby \
-  --image gcr.io/$PROJECT_ID/stripe-webhook-email-ruby \
-  --platform=managed --region=$REGION --allow-unauthenticated \
-  --set-env-vars STRIPE_API_KEY=sk_test_xxx,STRIPE_WEBHOOK_SECRET=whsec_xxx,SENDGRID_API_KEY=SG.xxxxxx,NOTIFY_EMAIL=desplat.samuel@outlook.be,FROM_EMAIL=noreply@votredomaine.com
+gcloud artifacts repositories create cloud-run \
+  --repository-format=docker \
+  --location=europe-west1 \
+  --description="Images Cloud Run"
