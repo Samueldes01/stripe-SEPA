@@ -1,14 +1,15 @@
 {
   "name": "stripe-webhook-email",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "express": "^4.19.2",
-    "stripe": "^14.23.0",
-    "@sendgrid/mail": "^7.7.0"
-  },
-  "scripts": {
-    "start": "node server.js"
+    "stripe": "^16.6.0",
+    "@getbrevo/brevo": "^2.5.0"
   }
 }
