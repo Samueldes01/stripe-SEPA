@@ -1,15 +1,13 @@
-FROM ruby:3.2-alpine
+FROM node:22-alpine
 
-# Paquets légers
-RUN apk add --no-cache build-base
+WORKDIR /usr/src/app
 
-WORKDIR /app
-COPY Gemfile Gemfile.lock* ./
-RUN bundle install
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY . .
 
-ENV RACK_ENV=production
-# Cloud Run utilisera $PORT
+ENV NODE_ENV=production
 EXPOSE 8080
-CMD ["ruby", "server.rb"]
+
+CMD ["node", "index.js"]
