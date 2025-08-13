@@ -4,12 +4,15 @@ import Brevo from "@getbrevo/brevo";
 
 const app = express();
 
-// Health check
+/**
+ * Routes de diagnostic
+ */
+app.get("/", (req, res) => res.status(200).send("up"));
 app.get("/healthz", (req, res) => res.status(200).send("ok"));
 
 /**
- * IMPORTANT : pour vérifier la signature Stripe, on a besoin du RAW body.
- * On applique donc express.raw UNIQUEMENT sur /webhook.
+ * Webhook Stripe
+ * IMPORTANT: Utiliser le RAW body pour vérifier la signature Stripe.
  */
 app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -22,6 +25,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
 
   let event;
   try {
+    // Vérifie que l'événement vient bien de Stripe
     event = Stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
   } catch (err) {
     console.error("Signature verification failed:", err.message);
@@ -55,11 +59,10 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
         break;
       }
       default:
-        // Autres événements ignorés
+        // autres événements ignorés
         break;
     }
 
-    // Toujours répondre 200 si tout s'est bien passé
     return res.status(200).send("[OK]");
   } catch (err) {
     console.error("Handler error:", err);
@@ -67,9 +70,15 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
   }
 });
 
-// Pour d'autres routes éventuelles, parser en JSON classique
+/**
+ * Pour toute autre route éventuelle, JSON classique.
+ * (doit venir APRÈS la route /webhook qui utilise express.raw)
+ */
 app.use(express.json());
 
+/**
+ * Helpers
+ */
 function formatAmount(amountInMinor, currency) {
   const digits = ["jpy", "krw"].includes((currency || "").toLowerCase()) ? 0 : 2;
   return `${(amountInMinor / 10 ** digits).toFixed(digits)} ${String(currency || "").toUpperCase()}`;
@@ -98,7 +107,10 @@ async function sendEmail({ subject, text }) {
   await api.sendTransacEmail(email);
 }
 
+/**
+ * Démarrage serveur — Cloud Run exige 0.0.0.0 et le port $PORT
+ */
 const port = process.env.PORT || 8080;
-app.listen(port, () => {
-  console.log(`Listening on :${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Listening on 0.0.0.0:${port}`);
 });
