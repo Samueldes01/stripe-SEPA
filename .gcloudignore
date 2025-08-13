@@ -1,1 +1,7 @@
-
+.git
+.gitignore
+.bundle
+vendor
+log
+tmp
+.DS_Store
